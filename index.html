@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dev Portfolio: Cyber</title>
+    <title>M S Rishikesh | Game Developer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
@@ -113,6 +113,9 @@
             width: 5000px;
             height: 5000px;
             will-change: transform; 
+            /* Force GPU acceleration */
+            transform: translate3d(0,0,0);
+            backface-visibility: hidden;
         }
 
         /* --- STABLE GLASS NODE STYLES --- */
@@ -122,12 +125,11 @@
             height: 90px;
             aspect-ratio: 1; 
             
-            /* CSS-Only Glass Effect (Robust) */
+            /* Optimized Glass Effect */
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             
-            /* Borders */
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-top: 1px solid rgba(255, 255, 255, 0.3);
             border-left: 1px solid rgba(255, 255, 255, 0.2);
@@ -139,39 +141,36 @@
             z-index: 10;
             cursor: pointer;
             
-            /* Deep Shadow for depth */
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
             
-            will-change: transform, left, top;
-            transition: border-color 0.3s, box-shadow 0.3s, background-color 0.3s;
+            /* Only animate transforms for 60fps smoothness */
+            will-change: transform;
+            transition: border-color 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
         }
 
         /* --- INFO PANEL FIXES --- */
-        /* Ensure panels are ABOVE everything else */
         .info-panel {
             position: absolute;
             top: 50%;
             left: 115%;
             width: 320px;
-            background: rgba(5, 5, 12, 0.95); /* More opaque for readability */
-            backdrop-filter: blur(20px);
+            background: rgba(5, 5, 12, 0.95); 
+            backdrop-filter: blur(15px); /* Slightly reduced blur for perf */
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-left: 2px solid #00e5ff;
             padding: 0;
             border-radius: 4px;
-            
-            /* Hidden State */
             opacity: 0;
             transform: translateY(-50%) translateX(-20px) scale(0.95);
             transform-origin: left center;
             pointer-events: none;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            
-            /* High Z-Index to overlap other nodes */
+            transition: opacity 0.2s, transform 0.2s;
             z-index: 100; 
             overflow: hidden;
             box-shadow: 0 20px 50px rgba(0,0,0,0.9);
-            visibility: hidden; /* Use visibility instead of display none for smoother transition */
+            visibility: hidden; 
+            /* GPU optimize */
+            will-change: transform, opacity;
         }
 
         .node.active .info-panel {
@@ -198,11 +197,11 @@
 
         /* Hover States */
         .node:not(.locked):hover {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px) saturate(1.5);
             --pulse-color: #00e5ff; 
             border-color: transparent; 
-            z-index: 50; /* Bring hovered node up */
+            z-index: 50; 
             animation: none;
         }
 
@@ -211,7 +210,7 @@
             border-color: #00e5ff;
             background: rgba(0, 229, 255, 0.1);
             box-shadow: 0 0 30px rgba(0, 229, 255, 0.3);
-            z-index: 90; /* Active node is highest priority */
+            z-index: 90; 
         }
 
         #node-code:hover { --pulse-color: #d500f9; }
@@ -361,7 +360,7 @@
         const renderer = new Renderer({ alpha: true, premultipliedAlpha: false }); const gl = renderer.gl; gl.clearColor(0, 0, 0, 1); container.appendChild(gl.canvas);
         const geometry = new Triangle(gl); const program = new Program(gl, { vertex: vert, fragment: frag, uniforms: { iTime: { value: 0 }, iResolution: { value: new Vec3(0, 0, 0) }, hue: { value: 0 } } });
         const mesh = new Mesh(gl, { geometry, program });
-        function resize() { const dpr = Math.min(window.devicePixelRatio, 2); const w = window.innerWidth; const h = window.innerHeight; renderer.setSize(w * dpr, h * dpr); gl.canvas.style.width = w + 'px'; gl.canvas.style.height = h + 'px'; program.uniforms.iResolution.value.set(w * dpr, h * dpr, w / h); }
+        function resize() { const dpr = Math.min(window.devicePixelRatio, 1.5); const w = window.innerWidth; const h = window.innerHeight; renderer.setSize(w * dpr, h * dpr); gl.canvas.style.width = w + 'px'; gl.canvas.style.height = h + 'px'; program.uniforms.iResolution.value.set(w * dpr, h * dpr, w / h); }
         window.addEventListener('resize', resize); resize();
         requestAnimationFrame(update); function update(t) { requestAnimationFrame(update); program.uniforms.iTime.value = t * 0.001; renderer.render({ scene: mesh }); }
     </script>
@@ -373,7 +372,7 @@
 
         function initNodes() {
             const nodes = Array.from(document.querySelectorAll('.node'));
-            // 1. Initial Spread & Jitter
+            // 1. Initial Position (Restore original grid)
             nodes.forEach(el => {
                 let x = parseFloat(el.getAttribute('data-x')), y = parseFloat(el.getAttribute('data-y'));
                 if (el.id !== 'node-core') {
@@ -384,14 +383,14 @@
                 el.style.left = x + 'px'; el.style.top = y + 'px';
                 state.nodes.push({ id: el.id, el: el, baseX: x, baseY: y, x: x, y: y, phase: Math.random()*Math.PI*2, speed: 0.001+Math.random()*0.002, amplitude: 15+Math.random()*20, width: el.offsetWidth, height: el.offsetHeight });
             });
-
-            // 2. Anti-Collision Iteration
-            for(let i=0; i<150; i++) { resolveCollisions(); }
+            
+            // Run physics loop to space them out without overlap
+            // We reset to original coordinates first to ensure a known starting state
+            for(let i=0; i<150; i++) resolveCollisions();
         }
 
         function resolveCollisions() {
-            // Increased Safety Distance for 1.5x Fisheye Scale
-            const minDist = 220; 
+            const minDist = 220; // Ensure nodes never touch (90px + 90px buffer)
             for (let i=0; i<state.nodes.length; i++) {
                 for (let j=i+1; j<state.nodes.length; j++) {
                     const n1 = state.nodes[i], n2 = state.nodes[j];
@@ -474,7 +473,11 @@
                     const x1 = n1.currentX + n1.width/2, y1 = n1.currentY + n1.height/2;
                     const x2 = n2.currentX + n2.width/2, y2 = n2.currentY + n2.height/2;
                     let d = `M ${x1} ${y1}`;
-                    for (let i=1; i<=40; i++) { const pt = getPointOnWave({x:x1,y:y1}, {x:x2,y:y2}, i/40, state.time); d += ` L ${pt.x} ${pt.y}`; }
+                    const segments = 25; // Reduced segments for performance
+                    for (let i=1; i<=segments; i++) { 
+                        const pt = getPointOnWave({x:x1,y:y1}, {x:x2,y:y2}, i/segments, state.time); 
+                        d += ` L ${pt.x} ${pt.y}`; 
+                    }
                     conn.pathEl.setAttribute('d', d);
                 }
             });
@@ -533,7 +536,9 @@
                 n.el.style.transform = `translate3d(${n.currentX - n.baseX}px, ${n.currentY - n.baseY}px, 0) scale(${scale})`;
             });
 
-            updateGlitches(t);
+            // Update glitches less frequently to save perf
+            if (Math.floor(t) % 2 === 0) updateGlitches(t);
+            
             renderLines();
             if (t - state.lastPacketSpawn > 2000) { spawnPacketsFromNode('node-core'); state.lastPacketSpawn = t; }
             updatePackets();
